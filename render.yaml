@@ -1,0 +1,41 @@
+# Render Blueprint for Riders Plus.
+# Free web services cannot attach a disk, so this uses Starter (the cheapest paid
+# plan, also called 0.5c-512mb) plus a 1 GB disk. Without the disk, SQLite and
+# uploads are wiped on every redeploy.
+#
+# Seed runs in the start command, not preDeployCommand: Render does not mount
+# the persistent disk during the build or the pre-deploy command.
+services:
+  - type: web
+    name: riders-plus
+    runtime: node
+    plan: starter
+    region: frankfurt
+    branch: main
+    numInstances: 1
+    buildCommand: npm install && npm run build
+    startCommand: npm run seed && npm start
+    healthCheckPath: /api/config
+    disk:
+      name: riders-plus-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # vite and the other build tools are devDependencies. Render would skip
+      # them when NODE_ENV=production unless this is set.
+      - key: NPM_CONFIG_PRODUCTION
+        value: "false"
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATA_DIR
+        value: /var/data
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
